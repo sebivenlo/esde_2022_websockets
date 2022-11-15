@@ -1,75 +1,89 @@
-const path = require('path');
-const http = require('http');
-const express = require('express');
-const socketio = require('socket.io');
-const formatMessage = require('./helpers/formatDate')
+const path = require("path");
+const colors = require("colors");
+const http = require("http");
+const express = require("express");
+const socketio = require("socket.io");
+
+const { formatMessage } = require("./utils.js");
+
 const {
   getActiveUser,
   exitRoom,
   newUser,
-  getIndividualRoomUsers
-} = require('./helpers/userHelper');
+  getIndividualRoomUsers,
+} = require("./helpers/userHelper");
 
 const app = express();
 const server = http.createServer(app);
 const io = socketio(server);
 
-// Set public folder
-app.use(express.static(path.join(__dirname, 'public')));
+console.clear();
+
+// public folder for assets
+app.use(express.static(path.join(__dirname, "public")));
 
 // this block will run when the client connects
-io.on('connection', socket => {
-  socket.on('joinRoom', ({ username, room }) => {
-    const user = newUser(socket.id, username, room);
+io.on("connection", (socket) => {
+  console.log(`-> A new client connected!`.brightGreen);
 
-    socket.join(user.room);
+  socket.on("chat:join", ({ username, room }) => {
+    if (!room || !username) {
+      return;
+    }
 
-    // General welcome
-    socket.emit('message', formatMessage("WebCage", 'Messages are limited to this room! '));
+    socket.join(room);
 
-    // Broadcast everytime users connects
+    socket.data.username = username;
+
+    socket.join(room);
+
+    // send message to everyone in the room of new user joining
     socket.broadcast
-      .to(user.room)
+      .to(room)
       .emit(
-        'message',
-        formatMessage("WebCage", `${user.username} has joined the room`)
+        "chat:new-message",
+        formatMessage("ESDE", `${socket.data.username} has joined the room`)
       );
 
+    console.log("joined");
+
     // Current active users and room name
-    io.to(user.room).emit('roomUsers', {
-      room: user.room,
-      users: getIndividualRoomUsers(user.room)
-    });
+    // io.to(user.room).emit("roomUsers", {
+    //   room: user.room,
+    //   users: getIndividualRoomUsers(user.room),
+    // });
   });
 
   // Listen for client message
-  socket.on('chatMessage', msg => {
-    const user = getActiveUser(socket.id);
+  socket.on("chat:message", (payload) => {
+    const { room, msg } = payload;
 
-    io.to(user.room).emit('message', formatMessage(user.username, msg));
+    io.to(room).emit(
+      "chat:new-message",
+      formatMessage(socket.data.username, msg)
+    );
   });
 
   // Runs when client disconnects
-  socket.on('disconnect', () => {
-    const user = exitRoom(socket.id);
+  socket.on("disconnect", () => {
+    const username = socket.data.username;
+    const activeRoom = socket.data.activeRoom;
 
-    if (user) {
-      io.to(user.room).emit(
-        'message',
-        formatMessage("WebCage", `${user.username} has left the room`)
-      );
+    io.to(activeRoom).emit(
+      "chat:new-message",
+      formatMessage("ESDE", `${username} has left the room`)
+    );
 
-      // Current active users and room name
-      io.to(user.room).emit('roomUsers', {
-        room: user.room,
-        users: getIndividualRoomUsers(user.room)
-      });
-    }
+    // Current active users and room name
+    // io.to(user.room).emit("roomUsers", {
+    //   room: user.room,
+    //   users: getIndividualRoomUsers(user.room),
+    // });
   });
 });
 
 const PORT = process.env.PORT || 3000;
-app.use(express.static("public"));
-app.use(express.static("helpers"));
 
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => {
+  console.log(`-> Listening on port ${PORT}`.brightGreen);
+});
