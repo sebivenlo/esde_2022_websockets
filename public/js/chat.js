@@ -3,19 +3,27 @@ const chatRow = document.getElementById("chat-row");
 const joinChatRow = document.getElementById("join-chat-row");
 const usernameInput = document.getElementById("input-username");
 const roomInput = document.getElementById("input-room");
+const chatInput = document.getElementById("chat-input");
+const chatForm = document.getElementById("chat-form");
 
-const chatMessages = document.querySelector(".chat-messages");
+const chatMessages = document.getElementById("chat-messages");
 const roomName = document.getElementById("room-name");
 const userList = document.getElementById("users");
+const chatHeaderRoomSpan = document.getElementById("chat-header-room-span");
+
+const chatLeaveButton = document.getElementById("chat-leave-button");
 
 const socket = io();
+
+var room = null;
+var username = null;
 
 joinChatForm.addEventListener("submit", (e) => {
   e.preventDefault();
 
   // get username & room
-  const username = usernameInput.value.trim();
-  const room = roomInput.value.trim();
+  username = usernameInput.value.trim();
+  room = roomInput.value.trim();
 
   console.log(username, room);
 
@@ -24,66 +32,70 @@ joinChatForm.addEventListener("submit", (e) => {
     return false;
   }
 
-  //hide the chat form
-  joinChatRow.classList.toggle("d-none");
+  socket.emit("chat:join", { username, room }, (response) => {
+    if (response.success) {
+      //hide the chat form
+      joinChatRow.classList.toggle("d-none");
 
-  //show the chat
-  chatRow.classList.toggle("d-none");
+      //show the chat
+      chatRow.classList.toggle("d-none");
 
-  socket.emit("chat:join", { username, room });
-  //   socket.on("roomUsers", ({ room, users }) => {
-  //     outputRoomName(room);
-  //     outputUsers(users);
-  //   });
-  //   socket.on("message", (message) => {
-  //     outputMessage(message);
+      chatHeaderRoomSpan.innerText = `${room}`;
 
-  //     // Scroll down
-  //     chatMessages.scrollTop = chatMessages.scrollHeight;
-  //   });
+      if (response.messages) {
+        response.messages.map((message) => {
+          outputMessage(message);
+        });
+      }
+    }
+
+    socket.on("chat:new-message", (payload) => {
+      outputMessage(payload);
+
+      console.log(payload);
+      // Scroll down
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    });
+  });
 });
 
-// chatForm.addEventListener("submit", (e) => {
-//   e.preventDefault();
+chatForm.addEventListener("submit", (e) => {
+  e.preventDefault();
 
-//   //hide the chat form
-//   joinChatForm.classList.toggle("d-none");
+  // Get message & trim
+  let msg = chatInput.value;
+  msg = msg.trim();
 
-//   //show the chat
-//   chatRow.classList.toggle("d-none");
+  if (!msg) {
+    alert("Message cannot be empty!");
+    return false;
+  }
 
-//   // Get message text
-//   let msg = e.target.elements.msg.value;
-//   msg = msg.trim();
+  // Emit message to server
+  socket.emit("chat:message", { room: room, msg });
 
-//   if (!msg) {
-//     return false;
-//   }
+  chatInput.value = "";
+  chatInput.focus();
+});
 
-//   // Emit message to server
-//   socket.emit("chatMessage", msg);
-
-//   // Clear input
-//   e.target.elements.msg.value = "";
-//   e.target.elements.msg.focus();
-// });
-
-function outputMessage(message) {
+function outputMessage(payload) {
   const div = document.createElement("div");
-  div.classList.add("message");
 
   const p = document.createElement("p");
-  p.classList.add("meta");
-  p.innerText = message.username;
-  p.innerHTML += `<span>${message.time}</span>`;
+
+  p.classList.add("message");
+
+  p.innerText = `${payload.username}: ${payload.msg}`;
+
+  const timeSpan = document.createElement("span");
+  timeSpan.classList.add("float-end");
+  div.appendChild(timeSpan);
+  timeSpan.innerText = payload.time;
+
   div.appendChild(p);
+  p.appendChild(timeSpan);
 
-  const para = document.createElement("p");
-  para.classList.add("text");
-  para.innerText = message.text;
-  div.appendChild(para);
-
-  document.querySelector(".chat-messages").appendChild(div);
+  chatMessages.appendChild(div);
 }
 function outputRoomName(room) {
   roomName.innerText = room;
@@ -98,9 +110,10 @@ function outputUsers(users) {
   });
 }
 
-//Prompt the user before leave chat room
-document.getElementById("leave-btn").addEventListener("click", () => {
-  const leaveRoom = confirm("Are you sure you want to leave the chatroom?");
+// leave the room when client desires
+
+chatLeaveButton.addEventListener("click", () => {
+  const leaveRoom = confirm("Are you sure you want to leave?");
 
   if (leaveRoom) {
     window.location = "../index.html";

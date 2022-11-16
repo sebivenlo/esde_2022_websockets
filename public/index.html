@@ -10,6 +10,8 @@
       crossorigin="anonymous"
     />
 
+    <link rel="stylesheet" href="/css/style.css" />
+
     <title>ESDE 2022 - Websockets</title>
   </head>
   <body class="bg-dark">
@@ -43,10 +45,39 @@
         </div>
       </div>
 
-      <div class="row d-none" id="chat-row">
+      <div
+        class="row d-none text-black mt-5 justify-content-center"
+        id="chat-row"
+      >
         <div class="col-12 col-md-6">
-          <div class="chat-messages">
-            <p>hi</p>
+          <div class="card">
+            <div class="card-header">
+              Chat | Room:
+              <span id="chat-header-room-span"></span>
+              <button class="btn btn-danger float-end" id="chat-leave-button">
+                Leave
+              </button>
+            </div>
+            <div class="card-body" id="chat-messages"></div>
+            <form id="chat-form">
+              <div class="input-group mt-3">
+                <input
+                  type="text"
+                  id="chat-input"
+                  class="form-control"
+                  placeholder="Message"
+                  aria-label="Recipient's username"
+                  aria-describedby="button-addon2"
+                />
+                <button
+                  class="btn btn-outline-primary"
+                  type="submit"
+                  id="button-addon2"
+                >
+                  Send
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </div>

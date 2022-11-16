@@ -6,79 +6,77 @@ const socketio = require("socket.io");
 
 const { formatMessage } = require("./utils.js");
 
-const {
-  getActiveUser,
-  exitRoom,
-  newUser,
-  getIndividualRoomUsers,
-} = require("./helpers/userHelper");
-
 const app = express();
 const server = http.createServer(app);
 const io = socketio(server);
 
+// variable that stores all messages in memory
+
+let messages = {};
+
 console.clear();
 
 // public folder for assets
+
 app.use(express.static(path.join(__dirname, "public")));
 
-// this block will run when the client connects
+// code that executes when a new client connects
+
 io.on("connection", (socket) => {
   console.log(`-> A new client connected!`.brightGreen);
 
-  socket.on("chat:join", ({ username, room }) => {
+  socket.on("chat:join", ({ username, room }, callback) => {
     if (!room || !username) {
       return;
     }
 
-    socket.join(room);
-
     socket.data.username = username;
+    socket.data.activeRoom = room;
 
     socket.join(room);
+
+    callback({
+      success: true,
+      messages: messages[room],
+    });
 
     // send message to everyone in the room of new user joining
+
     socket.broadcast
       .to(room)
       .emit(
         "chat:new-message",
-        formatMessage("ESDE", `${socket.data.username} has joined the room`)
+        formatMessage("System", `${socket.data.username} has joined the room`)
       );
-
-    console.log("joined");
-
-    // Current active users and room name
-    // io.to(user.room).emit("roomUsers", {
-    //   room: user.room,
-    //   users: getIndividualRoomUsers(user.room),
-    // });
   });
 
-  // Listen for client message
+  // listens for new messages and emits them to the correct room
+
   socket.on("chat:message", (payload) => {
     const { room, msg } = payload;
 
-    io.to(room).emit(
-      "chat:new-message",
-      formatMessage(socket.data.username, msg)
-    );
+    const response = formatMessage(socket.data.username, msg);
+
+    if (messages[room]) {
+      messages[room].push(response);
+    } else {
+      messages[room] = [];
+      messages[room].push(response);
+    }
+
+    io.to(room).emit("chat:new-message", response);
   });
 
-  // Runs when client disconnects
+  // triggers when client disconnects
+
   socket.on("disconnect", () => {
     const username = socket.data.username;
     const activeRoom = socket.data.activeRoom;
 
     io.to(activeRoom).emit(
       "chat:new-message",
-      formatMessage("ESDE", `${username} has left the room`)
+      formatMessage("System", `${username} has left the room`)
     );
-
-    // Current active users and room name
-    // io.to(user.room).emit("roomUsers", {
-    //   room: user.room,
-    //   users: getIndividualRoomUsers(user.room),
-    // });
   });
 });
 
