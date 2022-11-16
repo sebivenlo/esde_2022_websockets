@@ -14,7 +14,14 @@ const usernameExists = (sockets, username, room) => {
   });
 };
 
+const sleep = (ms) => {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+};
+
 module.exports = {
   formatMessage,
   usernameExists,
+  sleep,
 };
