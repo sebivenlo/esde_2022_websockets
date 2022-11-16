@@ -4,7 +4,7 @@ const http = require("http");
 const express = require("express");
 const socketio = require("socket.io");
 
-const { formatMessage } = require("./utils.js");
+const { formatMessage, usernameExists } = require("./utils.js");
 
 const app = express();
 const server = http.createServer(app);
@@ -25,15 +25,27 @@ app.use(express.static(path.join(__dirname, "public")));
 io.on("connection", (socket) => {
   console.log(`-> A new client connected!`.brightGreen);
 
-  socket.on("chat:join", ({ username, room }, callback) => {
+  socket.on("chat:join", async ({ username, room }, callback) => {
     if (!room || !username) {
       return;
     }
 
+    socket.join(room);
+
+    const sockets = await io.in(room).fetchSockets();
+
+    const exists = usernameExists(sockets, username, room);
+
+    if (exists) {
+      return callback({
+        success: false,
+        messages: null,
+        error: "Username already exists",
+      });
+    }
+
     socket.data.username = username;
     socket.data.activeRoom = room;
-
-    socket.join(room);
 
     callback({
       success: true,

@@ -8,6 +8,13 @@ const formatMessage = (username, msg) => {
   };
 };
 
+const usernameExists = (sockets, username, room) => {
+  return sockets.some((socket) => {
+    return socket.data.activeRoom == room && socket.data.username == username;
+  });
+};
+
 module.exports = {
   formatMessage,
+  usernameExists,
 };

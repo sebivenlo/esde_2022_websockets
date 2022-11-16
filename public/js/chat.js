@@ -25,8 +25,6 @@ joinChatForm.addEventListener("submit", (e) => {
   username = usernameInput.value.trim();
   room = roomInput.value.trim();
 
-  console.log(username, room);
-
   if (!username || !room) {
     alert("Username or room cannot be empty");
     return false;
@@ -47,15 +45,19 @@ joinChatForm.addEventListener("submit", (e) => {
           outputMessage(message);
         });
       }
+
+      socket.on("chat:new-message", (payload) => {
+        outputMessage(payload);
+
+        // Scroll down
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      });
+      return;
     }
 
-    socket.on("chat:new-message", (payload) => {
-      outputMessage(payload);
-
-      console.log(payload);
-      // Scroll down
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-    });
+    if (response.error) {
+      alert(response.error);
+    }
   });
 });
 
