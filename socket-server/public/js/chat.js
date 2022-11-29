@@ -52,6 +52,7 @@ joinChatForm.addEventListener("submit", (e) => {
         // Scroll down
         chatMessages.scrollTop = chatMessages.scrollHeight;
       });
+
       return;
     }
 
