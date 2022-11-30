@@ -12,7 +12,7 @@ const io = socketio(server);
 
 // variable that stores all messages in memory
 
-let messages = {};
+const messages = {};
 
 console.clear();
 
@@ -25,12 +25,12 @@ app.use(express.static(path.join(__dirname, "public")));
 io.on("connection", (socket) => {
   console.log(`-> A new client connected!`.brightGreen);
 
-  socket.on("chat:join", async ({ username, room }, callback) => {
+  socket.on("chat:join", async (payload, callback) => {
+    const { username, room } = payload;
+
     if (!room || !username) {
       return;
     }
-
-    socket.join(room);
 
     const sockets = await io.in(room).fetchSockets();
 
@@ -44,22 +44,23 @@ io.on("connection", (socket) => {
       });
     }
 
+    // no user with that name exists in the room so join
+
+    socket.join(room);
+
+    // set the username & activeRoom in the socket data property
+
     socket.data.username = username;
     socket.data.activeRoom = room;
+
+    // return the previous messages of that room
 
     callback({
       success: true,
       messages: messages[room],
     });
 
-    // send message to everyone in the room of new user joining
-
-    socket.broadcast
-      .to(room)
-      .emit(
-        "chat:new-message",
-        formatMessage("System", `${socket.data.username} has joined the room`)
-      );
+    // TODO: Exercise 1 implement new user joining the room message
   });
 
   // listens for new messages and emits them to the correct room
@@ -67,33 +68,40 @@ io.on("connection", (socket) => {
   socket.on("chat:message", (payload) => {
     const { room, msg } = payload;
 
-    const response = formatMessage(socket.data.username, msg);
+    const formattedMessage = formatMessage(socket.data.username, msg);
 
     if (messages[room]) {
-      messages[room].push(response);
+      messages[room].push(formattedMessage);
     } else {
       messages[room] = [];
-      messages[room].push(response);
+      messages[room].push(formattedMessage);
     }
 
-    io.to(room).emit("chat:new-message", response);
+    io.to(room).emit("chat:new-message", formattedMessage);
   });
 
   // triggers when client disconnects
 
   socket.on("disconnect", () => {
-    const username = socket.data.username;
-    const activeRoom = socket.data.activeRoom;
+    const username = socket.data.username || null;
+    const activeRoom = socket.data.activeRoom || null;
 
-    io.to(activeRoom).emit(
-      "chat:new-message",
-      formatMessage("System", `${username} has left the room`)
-    );
+    // only execute when user was actually in a room
+
+    if (username && activeRoom) {
+      // TODO: Exercise 2 implement user leaving the room message
+    }
+
+    console.log("-> A client has disconnected".red);
   });
 
-  // implement typing indicator
+  // TODO: Exercise 4 implement typing indicator
 
-  socket.on("chat:typing", (payload) => {});
+  // payload is what the client sends the server (its already an object)
+
+  socket.on("chat:typing", (payload) => {
+    // hint: emit the chat:typing event with a username variable to all users
+  });
 });
 
 const PORT = process.env.PORT || 3000;

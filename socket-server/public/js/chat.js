@@ -5,23 +5,21 @@ const usernameInput = document.getElementById("input-username");
 const roomInput = document.getElementById("input-room");
 const chatInput = document.getElementById("chat-input");
 const chatForm = document.getElementById("chat-form");
-
 const chatMessages = document.getElementById("chat-messages");
-const roomName = document.getElementById("room-name");
-const userList = document.getElementById("users");
 const chatHeaderRoomSpan = document.getElementById("chat-header-room-span");
-
 const chatLeaveButton = document.getElementById("chat-leave-button");
 
 const socket = io();
 
-var room = null;
-var username = null;
+let room = null;
+let username = null;
 
 joinChatForm.addEventListener("submit", (e) => {
+
   e.preventDefault();
 
   // get username & room
+
   username = usernameInput.value.trim();
   room = roomInput.value.trim();
 
@@ -29,6 +27,8 @@ joinChatForm.addEventListener("submit", (e) => {
     alert("Username or room cannot be empty");
     return false;
   }
+
+  // emits a join event to the server when the user submits the form
 
   socket.emit("chat:join", { username, room }, (response) => {
     if (response.success) {
@@ -46,13 +46,6 @@ joinChatForm.addEventListener("submit", (e) => {
         });
       }
 
-      socket.on("chat:new-message", (payload) => {
-        outputMessage(payload);
-
-        // Scroll down
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-      });
-
       return;
     }
 
@@ -61,6 +54,18 @@ joinChatForm.addEventListener("submit", (e) => {
     }
   });
 });
+
+ // triggers when the server sends a new message
+
+ socket.on("chat:new-message", (payload) => {
+  // call outputMessage function with the received payload from the server to append the message to the div
+  outputMessage(payload);
+
+  // scroll down to bottom of the div on new message
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+});
+
+// this function triggers when the users sends a message
 
 chatForm.addEventListener("submit", (e) => {
   e.preventDefault();
@@ -74,14 +79,17 @@ chatForm.addEventListener("submit", (e) => {
     return false;
   }
 
-  // Emit message to server
-  socket.emit("chat:message", { room: room, msg });
+  // emit message to server
+  
+  socket.emit("chat:message", { room, msg });
 
   chatInput.value = "";
   chatInput.focus();
 });
 
-function outputMessage(payload) {
+// outputs a received message to the DOM
+
+const outputMessage = (payload) => {
   const div = document.createElement("div");
 
   const p = document.createElement("p");
@@ -99,19 +107,7 @@ function outputMessage(payload) {
   p.appendChild(timeSpan);
 
   chatMessages.appendChild(div);
-}
-function outputRoomName(room) {
-  roomName.innerText = room;
-}
-// Add users to DOM
-function outputUsers(users) {
-  userList.innerHTML = "";
-  users.forEach((user) => {
-    const li = document.createElement("li");
-    li.innerText = user.username;
-    userList.appendChild(li);
-  });
-}
+};
 
 // leave the room when client desires
 
