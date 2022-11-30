@@ -33,6 +33,12 @@ body {
   background-size: contain;
 }
 
+@media only screen and (max-width: 600px) {
+  #chat-messages {
+    height: 400px;
+  }
+}
+
 #chat-messages .message {
   padding: 10px;
   margin-bottom: 15px;
@@ -40,3 +46,23 @@ body {
   border-radius: 5px;
 }
 
+#active-rooms {
+  height: 300px;
+  max-height: 300px;
+  overflow-y: scroll;
+}
+
+@media only screen and (max-width: 600px) {
+  #active-rooms {
+    height: 250px;
+    max-height: 250px;
+    overflow-y: scroll;
+  }
+}
+
+#active-rooms .room {
+  padding: 10px;
+  margin-bottom: 15px;
+  background-color: #e0e3f4;
+  border-radius: 5px;
+}

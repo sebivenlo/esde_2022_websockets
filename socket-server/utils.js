@@ -20,8 +20,25 @@ const sleep = (ms) => {
   });
 };
 
+const getRoomsWithCount = async (io) => {
+  const rooms = io.of("/").adapter.rooms;
+
+  let realRooms = {};
+
+  for (let [key, value] of rooms) {
+    const [first] = value;
+
+    if (key !== first) {
+      realRooms[key] = value.size;
+    }
+  }
+
+  return realRooms;
+};
+
 module.exports = {
   formatMessage,
   usernameExists,
   sleep,
+  getRoomsWithCount,
 };

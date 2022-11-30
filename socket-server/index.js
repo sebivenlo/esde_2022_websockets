@@ -4,7 +4,11 @@ const http = require("http");
 const express = require("express");
 const socketio = require("socket.io");
 
-const { formatMessage, usernameExists } = require("./utils.js");
+const {
+  formatMessage,
+  usernameExists,
+  getRoomsWithCount,
+} = require("./utils.js");
 
 const app = express();
 const server = http.createServer(app);
@@ -22,8 +26,10 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // code that executes when a new client connects
 
-io.on("connection", (socket) => {
+io.on("connection", async (socket) => {
   console.log(`-> A new client connected!`.brightGreen);
+
+  // TODO: Exercise 4.2 emit event when a user connects with all the active rooms
 
   socket.on("chat:join", async (payload, callback) => {
     const { username, room } = payload;
@@ -32,11 +38,9 @@ io.on("connection", (socket) => {
       return;
     }
 
-
     // get all sockets in current room
 
     const sockets = await io.in(room).fetchSockets();
-
 
     // check if there is an user with that name already
 
@@ -67,6 +71,8 @@ io.on("connection", (socket) => {
       success: true,
       messages: messages[room],
     });
+
+    // TODO: Exercise 4.1 emit event of all active rooms to all users when a user joins a room
 
     // TODO: Exercise 1 implement new user joining the room message
   });
@@ -103,13 +109,7 @@ io.on("connection", (socket) => {
     console.log("-> A client has disconnected".red);
   });
 
-  // TODO: Exercise 4 implement typing indicator
-
-  // payload is what the client sends the server (its already an object)
-
-  socket.on("chat:typing", (payload) => {
-    // hint: emit the chat:typing event with a username variable to all users
-  });
+  // TODO: Exercise 3.2 implement a listener for the typing event and send it to all OTHER clients of that specific room
 });
 
 const PORT = process.env.PORT || 3000;
