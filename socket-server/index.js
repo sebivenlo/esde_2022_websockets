@@ -32,9 +32,17 @@ io.on("connection", (socket) => {
       return;
     }
 
+
+    // get all sockets in current room
+
     const sockets = await io.in(room).fetchSockets();
 
+
+    // check if there is an user with that name already
+
     const exists = usernameExists(sockets, username, room);
+
+    // if user with that name exists, return success false with error message
 
     if (exists) {
       return callback({
@@ -44,7 +52,7 @@ io.on("connection", (socket) => {
       });
     }
 
-    // no user with that name exists in the room so join
+    // no user with that name exists in the room so join the room
 
     socket.join(room);
 
